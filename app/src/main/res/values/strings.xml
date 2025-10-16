@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Aplicacion_sencilla_publicidad</string>
+    <string name="navigation_drawer_open">Abrir menú</string>
+    <string name="navigation_drawer_close">Cerrar menú</string>
+    <string name="desc_profile_photo">Foto de perfil</string>
+    <string name="default_user_name">Usuario</string>
+</resources>
