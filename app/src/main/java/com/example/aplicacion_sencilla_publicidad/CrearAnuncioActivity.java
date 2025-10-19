@@ -8,13 +8,11 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import android.util.Log;
-import android.widget.ImageView;
+
 import android.widget.Toast;
 import android.net.Uri;
 
 import com.android.volley.RequestQueue;
-import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -24,7 +22,6 @@ import android.widget.TextView;
 
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import android.widget.ArrayAdapter;
 
@@ -36,19 +33,21 @@ import com.android.volley.toolbox.Volley;
 import java.util.Map;
 
 import android.content.Intent;
-
-
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.SetOptions;
-
-
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
-import com.google.firebase.firestore.FirebaseFirestore;
+
+// imports para los campos del cuestionario
+import android.widget.EditText;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.provider.MediaStore;
+import android.content.ActivityNotFoundException;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 
 
-public class MainActivity extends AppCompatActivity {
+
+public class CrearAnuncioActivity extends AppCompatActivity {
 
 
     private ArrayAdapter<String> adapter;  //BUSCADOR
@@ -60,88 +59,29 @@ public class MainActivity extends AppCompatActivity {
 
     private MaterialAutoCompleteTextView searchAutoComplete;  // BUSCADOR
 
+    private EditText editDescripcion, editTelefono;
+    private ImageView imagePreview;
+    private Button btnSubirImagen, btnPublicar;
+    private Uri imagenUri = null;
+
+    // Launcher para seleccionar imagen
+    private final ActivityResultLauncher<Intent> seleccionarImagenLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    imagenUri = result.getData().getData();
+                    imagePreview.setImageURI(imagenUri);
+                }
+            });
+
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_crear_anuncio);
 
 
-        // INICIO ---------FIREBASE   y FIRESTORE -------------//
-
-        // Revisar si el usuario ya está logueado
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        if (user == null) {
-            // Usuario no logueado → abrir LoginActivity
-            Intent intent = new Intent(this, LoginActivity.class);
-            startActivity(intent);
-            finish();
-            return; // evita ejecutar más código
-        }
-
-        if (user != null) {
-            String uid = user.getUid(); // Identificador único
-            String name = user.getDisplayName(); // Nombre del usuario
-            String email = user.getEmail(); // Correo electrónico
-            //String photoUrl = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null;
-
-            Map<String, Object> userData = new HashMap<>();
-            userData.put("name", name);
-            userData.put("email", email);
-            userData.put("uid", uid);
-            //userData.put("photoUrl", photoUrl);
-
-            db.collection("users").document(uid)
-                    .set(userData, SetOptions.merge())
-                    .addOnSuccessListener(aVoid -> Log.d("Firestore", "Usuario actualizado correctamente"))
-                    .addOnFailureListener(e -> Log.w("Firestore", "Error al guardar usuario", e));
-
-
-
-            // Puedes mostrar los datos o guardarlos en la base de datos
-        }
-
-        // Usuario logueado → continuar con la MainActivity
-
-
-
-        // Obtener el usuario actual de Firebase
-        //FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-
-        if (user != null) {
-            // Accedemos al NavigationView que está en tu activity_main.xml
-            NavigationView navigationView = findViewById(R.id.navigationView);
-
-            // Obtenemos la vista del header (la parte superior del menú lateral)
-            View headerView = navigationView.getHeaderView(0);
-
-            // Referencias a los elementos del header
-            TextView textUserName = headerView.findViewById(R.id.textUserName);
-            ImageView imageProfile = headerView.findViewById(R.id.imageProfile);
-
-            // Asignamos el nombre del usuario (si existe)
-            String nombreUsuario = user.getDisplayName();
-            if (nombreUsuario != null && !nombreUsuario.isEmpty()) {
-                textUserName.setText(nombreUsuario);
-            } else {
-                textUserName.setText("Usuario sin nombre");
-            }
-
-            // Asignamos la foto de perfil (si tiene)
-            Uri fotoPerfil = user.getPhotoUrl();
-            if (fotoPerfil != null) {
-                Glide.with(this)
-                        .load(fotoPerfil)
-                        .placeholder(R.drawable.ic_menu) // Imagen por defecto mientras carga
-                        .into(imageProfile);
-            } else {
-                imageProfile.setImageResource(R.drawable.ic_menu); // Imagen por defecto
-            }
-        }
 
         // FINAL ---------FIREBASE   y  FIRESTORE -------------//
 
@@ -217,16 +157,12 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_create) {
                 Toast.makeText(this, "Crear anuncio", Toast.LENGTH_SHORT).show();
                 //startActivity(new Intent(this, CrearAnuncioActivity.class));
-                /*
                 getSupportFragmentManager()
                         .beginTransaction()
                         .replace(R.id.fragment_container, new CrearAnuncioFragment())
                         .addToBackStack(null)
                         .commit();
-                */
                 getSupportActionBar().setTitle("Crear anuncio");
-                startActivity(new Intent(this, CrearAnuncioActivity.class));
-
 
             }
 
@@ -238,6 +174,47 @@ public class MainActivity extends AppCompatActivity {
 
         // Búsqueda por localidad
         inicializarBusquedaLocalidades();
+
+        // Campos del formulario
+        editDescripcion = findViewById(R.id.descriptionEditText);
+        editTelefono = findViewById(R.id.phoneEditText);
+        imagePreview = findViewById(R.id.imagePreview);
+        btnSubirImagen = findViewById(R.id.buttonUploadImage);
+        btnPublicar = findViewById(R.id.buttonCreateAd);
+
+// Acción de subir imagen
+        btnSubirImagen.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            try {
+                seleccionarImagenLauncher.launch(intent);
+            } catch (ActivityNotFoundException e) {
+                Toast.makeText(this, "No se pudo abrir la galería", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+// Acción de publicar
+        btnPublicar.setOnClickListener(v -> {
+            String descripcion = editDescripcion.getText().toString().trim();
+            String telefono = editTelefono.getText().toString().trim();
+
+            if (descripcion.isEmpty()) {
+                Toast.makeText(this, "La descripción es obligatoria", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (telefono.isEmpty()) {
+                Toast.makeText(this, "El número de teléfono es obligatorio", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Aquí puedes enviar los datos al servidor o guardarlos localmente
+            String mensaje = "Anuncio creado:\n" +
+                    "Descripción: " + descripcion + "\n" +
+                    "Teléfono: " + telefono + "\n" +
+                    (imagenUri != null ? "Imagen seleccionada ✅" : "Sin imagen");
+
+            Toast.makeText(this, mensaje, Toast.LENGTH_LONG).show();
+        });
 
     }
 
