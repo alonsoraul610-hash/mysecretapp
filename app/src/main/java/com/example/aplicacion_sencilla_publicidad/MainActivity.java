@@ -7,10 +7,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import android.util.Log;
+import android.widget.ImageView;
 import android.widget.Toast;
 import android.net.Uri;
 
 import com.android.volley.RequestQueue;
+import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -20,6 +24,7 @@ import android.widget.TextView;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import android.widget.ArrayAdapter;
 
@@ -30,8 +35,18 @@ import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
 import java.util.Map;
 
+import android.content.Intent;
+import android.os.Bundle;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.SetOptions;
+
 
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -51,10 +66,88 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+
         setContentView(R.layout.activity_main);
+
+
+        // Revisar si el usuario ya está logueado
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        if (user == null) {
+            // Usuario no logueado → abrir LoginActivity
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return; // evita ejecutar más código
+        }
+
+        if (user != null) {
+            String uid = user.getUid(); // Identificador único
+            String name = user.getDisplayName(); // Nombre del usuario
+            String email = user.getEmail(); // Correo electrónico
+            //String photoUrl = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null;
+
+            Map<String, Object> userData = new HashMap<>();
+            userData.put("name", name);
+            userData.put("email", email);
+            userData.put("uid", uid);
+            //userData.put("photoUrl", photoUrl);
+
+            db.collection("users").document(uid)
+                    .set(userData, SetOptions.merge())
+                    .addOnSuccessListener(aVoid -> Log.d("Firestore", "Usuario actualizado correctamente"))
+                    .addOnFailureListener(e -> Log.w("Firestore", "Error al guardar usuario", e));
+
+
+
+            // Puedes mostrar los datos o guardarlos en la base de datos
+        }
+
+        // Usuario logueado → continuar con la MainActivity
+        //setContentView(R.layout.activity_main);
+
+
+
+        // Obtener el usuario actual de Firebase
+        //FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (user != null) {
+            // Accedemos al NavigationView que está en tu activity_main.xml
+            NavigationView navigationView = findViewById(R.id.navigationView);
+
+            // Obtenemos la vista del header (la parte superior del menú lateral)
+            View headerView = navigationView.getHeaderView(0);
+
+            // Referencias a los elementos del header
+            TextView textUserName = headerView.findViewById(R.id.textUserName);
+            ImageView imageProfile = headerView.findViewById(R.id.imageProfile);
+
+            // Asignamos el nombre del usuario (si existe)
+            String nombreUsuario = user.getDisplayName();
+            if (nombreUsuario != null && !nombreUsuario.isEmpty()) {
+                textUserName.setText(nombreUsuario);
+            } else {
+                textUserName.setText("Usuario sin nombre");
+            }
+
+            // Asignamos la foto de perfil (si tiene)
+            Uri fotoPerfil = user.getPhotoUrl();
+            if (fotoPerfil != null) {
+                Glide.with(this)
+                        .load(fotoPerfil)
+                        .placeholder(R.drawable.ic_menu) // Imagen por defecto mientras carga
+                        .into(imageProfile);
+            } else {
+                imageProfile.setImageResource(R.drawable.ic_menu); // Imagen por defecto
+            }
+        }
+
+
+        EdgeToEdge.enable(this);
+        //setContentView(R.layout.activity_main);
+
 
         DrawerLayout drawerLayout = findViewById(R.id.drawerLayout);
 
@@ -67,15 +160,19 @@ public class MainActivity extends AppCompatActivity {
         // 🔹 Aquí defines la variable toolbar y la conectas con el layout
         MaterialToolbar toolbar = findViewById(R.id.topAppBar);
 
+
         // (Opcional) Para usar la Toolbar como ActionBar
         setSupportActionBar(toolbar);
+
+
 
         // Mostrar botón de retroceso (flecha atrás) si en el futuro añades más pantallas:
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         //Cambiar el título dinámicamente:
-        //getSupportActionBar().setTitle("Nueva sección");
-        toolbar.setTitle("Nueva sección");
+        getSupportActionBar().setTitle("Buscador");
+        //getSupportActionBar().setTitle("Inicio");
+        //toolbar.setTitle("Nueva sección");
 
 
         toolbar.setNavigationOnClickListener(v ->
@@ -100,6 +197,7 @@ public class MainActivity extends AppCompatActivity {
         TextView textUserName = headerView.findViewById(R.id.textUserName);
         /// //
 
+        TextInputLayout searchInputLayout = findViewById(R.id.searchInputLayout);
 
         // 🔹 Manejo de clics en las opciones del menú
         navigationView.setNavigationItemSelectedListener(item -> {
@@ -107,14 +205,30 @@ public class MainActivity extends AppCompatActivity {
 
             if (id == R.id.nav_home) {
                 Toast.makeText(this, "Inicio seleccionado", Toast.LENGTH_SHORT).show();
+                searchInputLayout.setVisibility(View.VISIBLE);
+                getSupportActionBar().setTitle("Buscador");
+                startActivity(new Intent(this, MainActivity.class));
             } else if (id == R.id.nav_profile) {
                 Toast.makeText(this, "Perfil seleccionado", Toast.LENGTH_SHORT).show();
+            } else if (id == R.id.nav_favoritos) {
+                Toast.makeText(this, "Favoritos seleccionado", Toast.LENGTH_SHORT).show();
             } else if (id == R.id.nav_settings) {
                 Toast.makeText(this, "Configuración seleccionada", Toast.LENGTH_SHORT).show();
             } else if (id == R.id.nav_help) {
                 Toast.makeText(this, "Ayuda seleccionada", Toast.LENGTH_SHORT).show();
             } else if (id == R.id.nav_logout) {
                 Toast.makeText(this, "Cerrar sesión", Toast.LENGTH_SHORT).show();
+            } else if (id == R.id.nav_create) {
+                Toast.makeText(this, "Crear anuncio", Toast.LENGTH_SHORT).show();
+                //startActivity(new Intent(this, CrearAnuncioActivity.class));
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.fragment_container, new CrearAnuncioFragment())
+                        .addToBackStack(null)
+                        .commit();
+                searchInputLayout.setVisibility(View.GONE);
+                getSupportActionBar().setTitle("Crear anuncio");
+
             }
 
             drawerLayout.closeDrawers(); // Cierra el menú tras pulsar
@@ -123,7 +237,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
+        // logica buscar localidades ---------
         abstract class SimpleTextWatcher implements TextWatcher {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void afterTextChanged(Editable s) {}
@@ -212,20 +326,27 @@ public class MainActivity extends AppCompatActivity {
 
     private String abreviarDisplayName(String displayName, int maxSegmentos) {
         if (displayName == null || displayName.isEmpty()) return displayName;
-        // Separar por coma y limpiar espacios
+
+        // Separar por coma
         String[] partes = displayName.split(",");
         int take = Math.min(partes.length, maxSegmentos);
         StringBuilder sb = new StringBuilder();
+
         for (int j = 0; j < take; j++) {
+            // Limpiar espacios y eliminar el texto después de "/" en este segmento
             String p = partes[j].trim();
+            if (p.contains("/")) {
+                p = p.substring(0, p.indexOf("/")).trim();
+            }
+
             if (p.isEmpty()) continue;
+
             if (sb.length() > 0) sb.append(", ");
             sb.append(p);
         }
+
         return sb.toString();
     }
-
-
 
 }
 

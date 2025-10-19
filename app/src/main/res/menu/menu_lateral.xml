@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-
     <item android:id="@+id/nav_home" android:title="Inicio" android:icon="@drawable/ic_menu" />
+    <item android:id="@+id/nav_favoritos" android:title="Favoritos" android:icon="@drawable/ic_menu" />
+    <item android:id="@+id/nav_create" android:title="Crear anuncio" android:icon="@drawable/ic_menu" />
+    <item android:id="@+id/nav_help" android:title="Ayuda" android:icon="@drawable/ic_menu" />
     <item android:id="@+id/nav_profile" android:title="Perfil" android:icon="@drawable/ic_menu" />
     <item android:id="@+id/nav_settings" android:title="Configuración" android:icon="@drawable/ic_menu" />
-    <item android:id="@+id/nav_help" android:title="Ayuda" android:icon="@drawable/ic_menu" />
     <item android:id="@+id/nav_logout" android:title="Cerrar sesión" android:icon="@drawable/ic_menu" />
-
 </menu>
