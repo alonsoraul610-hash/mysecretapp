@@ -18,6 +18,9 @@ import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.android.material.navigation.NavigationView;
 import android.view.View;
 import android.widget.TextView;
@@ -47,6 +50,12 @@ import com.google.firebase.firestore.SetOptions;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.SetOptions;
+
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -59,6 +68,16 @@ public class MainActivity extends AppCompatActivity {
     private Runnable searchRunnable; //BUSCADOR
 
     private MaterialAutoCompleteTextView searchAutoComplete;  // BUSCADOR
+
+
+    private Map<String, double[]> coordenadasLocalidades = new HashMap<>();
+    private double selectedLat = 0.0;
+    private double selectedLon = 0.0;
+
+    // para mostrar los anuncios por pantalla
+    private RecyclerView recyclerAnuncios;
+    private List<Anuncio> listaAnuncios = new ArrayList<>();
+    private AnuncioAdapter anuncioAdapter;
 
 
 
@@ -238,6 +257,85 @@ public class MainActivity extends AppCompatActivity {
 
         // Búsqueda por localidad
         inicializarBusquedaLocalidades();
+        searchAutoComplete.setOnItemClickListener((parent, view, position, id) -> {
+            String seleccion = (String) parent.getItemAtPosition(position);
+            if (coordenadasLocalidades.containsKey(seleccion)) {
+                double[] coords = coordenadasLocalidades.get(seleccion);
+                selectedLat = coords[0];
+                selectedLon = coords[1];
+
+                Log.d("LocalidadSeleccionada", "Lat: " + selectedLat + ", Lon: " + selectedLon);
+                Toast.makeText(this, "Seleccionado: " + seleccion +
+                        "\nLat: " + selectedLat + ", Lon: " + selectedLon, Toast.LENGTH_SHORT).show();
+
+                // 🔹 Llama aquí a la búsqueda en Firebase
+                buscarAnunciosPorCoordenadas(selectedLat, selectedLon);
+            }
+        });
+
+        //FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("users");
+
+
+// Latitud y longitud seleccionadas
+        double lat = selectedLat;
+        double lon = selectedLon;
+
+// Tolerancia pequeña por si hay ligeras variaciones
+        double epsilon = 0.0001; // antes 0.0001
+
+// 🔹 Buscar todos los anuncios de todos los usuarios
+        /*
+        db.collectionGroup("anuncios")
+                .whereGreaterThanOrEqualTo("lat", lat - epsilon)
+                .whereLessThanOrEqualTo("lat", lat + epsilon)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<DocumentSnapshot> anuncios = queryDocumentSnapshots.getDocuments();
+                    List<Map<String, Object>> coincidencias = new ArrayList<>();
+
+                    for (DocumentSnapshot doc : anuncios) {
+                        Double lonAnuncio = doc.getDouble("lon");
+                        if (lonAnuncio != null && Math.abs(lonAnuncio - lon) < epsilon) {
+                            coincidencias.add(doc.getData());
+                        }
+                    }
+
+                    if (coincidencias.isEmpty()) {
+                        Toast.makeText(this, "No hay anuncios en esta localidad", Toast.LENGTH_SHORT).show();
+                    } else {
+                        for (Map<String, Object> anuncio : coincidencias) {
+                            String desc = (String) anuncio.get("descripcion");
+                            String tel = (String) anuncio.get("telefono");
+                            String loc = (String) anuncio.get("localidad");
+                            Log.d("AnuncioCoincidente", "📍 " + loc + " | " + desc + " | " + tel);
+                        }
+                        Toast.makeText(this, "Se encontraron " + coincidencias.size() + " anuncios", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FirestoreError", "Error al buscar anuncios", e);
+                });
+
+         */
+
+
+
+        //esto es para mostrar los anuncios por pantalla
+        recyclerAnuncios = findViewById(R.id.recyclerAnuncios);
+        recyclerAnuncios.setLayoutManager(new LinearLayoutManager(this));
+        anuncioAdapter = new AnuncioAdapter(this, listaAnuncios, anuncio -> {
+            Intent intent = new Intent(MainActivity.this, DetalleAnuncioActivity.class);
+            intent.putExtra("descripcion", anuncio.getDescripcion());
+            intent.putExtra("telefono", anuncio.getTelefono());
+            intent.putExtra("localidad", anuncio.getLocalidad());
+            intent.putExtra("imagenUrl", anuncio.getImagenUrl());
+            startActivity(intent);
+        });
+        recyclerAnuncios.setAdapter(anuncioAdapter);
+
+
+
 
     }
 
@@ -249,6 +347,28 @@ public class MainActivity extends AppCompatActivity {
         // Adaptador del autocompletado
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, new ArrayList<>());
         searchAutoComplete.setAdapter(adapter);
+
+
+
+        searchAutoComplete.setOnItemClickListener((parent, view, position, id) -> {
+            String seleccion = (String) parent.getItemAtPosition(position);
+
+            if (coordenadasLocalidades.containsKey(seleccion)) {
+                double[] coords = coordenadasLocalidades.get(seleccion);
+                double lat = coords[0];
+                double lon = coords[1];
+
+                // 🔹 Imprime en el Logcat
+                Log.d("LocalidadSeleccionada", "Localidad: " + seleccion + " | Lat: " + lat + " | Lon: " + lon);
+
+                // (Opcional) Toast para confirmarlo visualmente
+                Toast.makeText(this, "Lat: " + lat + "\nLon: " + lon, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+
+
+
 
         // Listener simplificado de texto
         searchAutoComplete.addTextChangedListener(new SimpleTextWatcher() {
@@ -279,11 +399,17 @@ public class MainActivity extends AppCompatActivity {
 
                     List<String> resultados = new ArrayList<>();
                     try {
+                        coordenadasLocalidades.clear(); // Limpiamos resultados previos
                         for (int i = 0; i < response.length(); i++) {
                             String displayName = response.getJSONObject(i).getString("display_name");
-                            // Tomar solo los primeros 3 segmentos separados por coma
+                            double lat = response.getJSONObject(i).getDouble("lat");
+                            double lon = response.getJSONObject(i).getDouble("lon");
+
+                            // Tomar solo los primeros 3 segmentos del nombre
                             String corto = abreviarDisplayName(displayName, 3);
-                            resultados.add(corto); // <-- SOLO la versión corta
+
+                            resultados.add(corto);
+                            coordenadasLocalidades.put(corto, new double[]{lat, lon});
                         }
 
                         // Actualizar adaptador
@@ -305,6 +431,7 @@ public class MainActivity extends AppCompatActivity {
                         mostrarToast("Error procesando la respuesta");
                         e.printStackTrace();
                     }
+
                 },
                 error -> mostrarToast("Error de red: " + error.getMessage())
         ) {
@@ -350,6 +477,81 @@ public class MainActivity extends AppCompatActivity {
         @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
         @Override public void afterTextChanged(Editable s) {}
     }
+
+   /* //esta es la version en la que muestra los anuncios por el logcat
+    private void buscarAnunciosPorCoordenadas(double lat, double lon) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        double epsilon = 0.0001;
+
+        Log.d("BusquedaAnuncios", "Buscando anuncios cerca de Lat: " + lat + ", Lon: " + lon + ", Epsilon: " + epsilon);
+
+        db.collectionGroup("anuncios")
+                .whereGreaterThanOrEqualTo("latitud", lat - epsilon)
+                .whereLessThanOrEqualTo("latitud", lat + epsilon)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<DocumentSnapshot> anuncios = queryDocumentSnapshots.getDocuments();
+                    List<Map<String, Object>> coincidencias = new ArrayList<>();
+
+                    for (DocumentSnapshot doc : anuncios) {
+                        Double lonAnuncio = doc.getDouble("longitud");
+                        if (lonAnuncio != null && Math.abs(lonAnuncio - lon) < epsilon) {
+                            coincidencias.add(doc.getData());
+                        }
+                    }
+
+                    if (coincidencias.isEmpty()) {
+                        Toast.makeText(this, "No hay anuncios en esta localidad", Toast.LENGTH_SHORT).show();
+                    } else {
+                        for (Map<String, Object> anuncio : coincidencias) {
+                            String desc = (String) anuncio.get("descripcion");
+                            String tel = (String) anuncio.get("telefono");
+                            String loc = (String) anuncio.get("localidad");
+                            Log.d("AnuncioCoincidente", "📍 " + loc + " | " + desc + " | " + tel);
+                        }
+                        Toast.makeText(this, "Se encontraron " + coincidencias.size() + " anuncios", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> Log.e("FirestoreError", "Error al buscar anuncios", e));
+    }
+
+    */
+
+
+    private void buscarAnunciosPorCoordenadas(double lat, double lon) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        double epsilon = 0.0001;
+
+        db.collectionGroup("anuncios")
+                .whereGreaterThanOrEqualTo("latitud", lat - epsilon)
+                .whereLessThanOrEqualTo("latitud", lat + epsilon)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    listaAnuncios.clear();
+
+                    for (DocumentSnapshot doc : queryDocumentSnapshots) {
+                        Double lonAnuncio = doc.getDouble("longitud");
+                        if (lonAnuncio != null && Math.abs(lonAnuncio - lon) < epsilon) {
+                            String descripcion = doc.getString("descripcion");
+                            String telefono = doc.getString("telefono");
+                            String localidad = doc.getString("localidad");
+                            String imagenUrl = doc.getString("imagenUrl"); // opcional
+
+                            listaAnuncios.add(new Anuncio(descripcion, telefono, localidad, imagenUrl));
+                        }
+                    }
+
+                    anuncioAdapter.notifyDataSetChanged();
+
+                    if (listaAnuncios.isEmpty()) {
+                        Toast.makeText(this, "No hay anuncios en esta localidad", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Se encontraron " + listaAnuncios.size() + " anuncios", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> Log.e("FirestoreError", "Error al buscar anuncios", e));
+    }
+
 
 
 }

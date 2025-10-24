@@ -45,6 +45,16 @@ import android.content.ActivityNotFoundException;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 
+//imports del firebase
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+
 
 
 public class CrearAnuncioActivity extends AppCompatActivity {
@@ -64,6 +74,18 @@ public class CrearAnuncioActivity extends AppCompatActivity {
     private Button btnSubirImagen, btnPublicar;
     private Uri imagenUri = null;
 
+    //instancias firebase
+    private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
+
+    // para la geolocalizacion
+    private double latitudSeleccionada;
+    private double longitudSeleccionada;
+
+    // Lista de mapas que guardará el nombre corto y sus coordenadas
+    private List<Map<String, String>> localidadesConCoordenadas = new ArrayList<>();
+
+
     // Launcher para seleccionar imagen
     private final ActivityResultLauncher<Intent> seleccionarImagenLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -80,6 +102,9 @@ public class CrearAnuncioActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_crear_anuncio);
+
+        mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
 
 
 
@@ -156,13 +181,14 @@ public class CrearAnuncioActivity extends AppCompatActivity {
                 Toast.makeText(this, "Cerrar sesión", Toast.LENGTH_SHORT).show();
             } else if (id == R.id.nav_create) {
                 Toast.makeText(this, "Crear anuncio", Toast.LENGTH_SHORT).show();
-                //startActivity(new Intent(this, CrearAnuncioActivity.class));
-                getSupportFragmentManager()
+                startActivity(new Intent(this, CrearAnuncioActivity.class));
+                /*getSupportFragmentManager()
                         .beginTransaction()
                         .replace(R.id.fragment_container, new CrearAnuncioFragment())
                         .addToBackStack(null)
                         .commit();
                 getSupportActionBar().setTitle("Crear anuncio");
+                 */
 
             }
 
@@ -174,6 +200,30 @@ public class CrearAnuncioActivity extends AppCompatActivity {
 
         // Búsqueda por localidad
         inicializarBusquedaLocalidades();
+
+
+
+
+        // Cuando el usuario selecciona una localidad del desplegable
+        searchAutoComplete.setOnItemClickListener((parent, view, position, id) -> {
+            String seleccionado = (String) parent.getItemAtPosition(position);
+
+            for (Map<String, String> loc : localidadesConCoordenadas) {
+                if (loc.get("nombre").equals(seleccionado)) {
+                    try {
+                        latitudSeleccionada = Double.parseDouble(loc.get("lat"));
+                        longitudSeleccionada = Double.parseDouble(loc.get("lon"));
+                        Toast.makeText(this, "Coordenadas guardadas ✅ Lat: " + latitudSeleccionada + ", Lon: " + longitudSeleccionada, Toast.LENGTH_SHORT).show();
+                    } catch (NumberFormatException e) {
+                        Toast.makeText(this, "Error al convertir coordenadas", Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+                }
+            }
+        });
+
+
+
 
         // Campos del formulario
         editDescripcion = findViewById(R.id.descriptionEditText);
@@ -196,6 +246,10 @@ public class CrearAnuncioActivity extends AppCompatActivity {
         btnPublicar.setOnClickListener(v -> {
             String descripcion = editDescripcion.getText().toString().trim();
             String telefono = editTelefono.getText().toString().trim();
+            String localidad = searchAutoComplete.getText().toString().trim();
+
+
+
 
             if (descripcion.isEmpty()) {
                 Toast.makeText(this, "La descripción es obligatoria", Toast.LENGTH_SHORT).show();
@@ -207,14 +261,48 @@ public class CrearAnuncioActivity extends AppCompatActivity {
                 return;
             }
 
-            // Aquí puedes enviar los datos al servidor o guardarlos localmente
-            String mensaje = "Anuncio creado:\n" +
-                    "Descripción: " + descripcion + "\n" +
-                    "Teléfono: " + telefono + "\n" +
-                    (imagenUri != null ? "Imagen seleccionada ✅" : "Sin imagen");
+            if (localidad.isEmpty()) {
+                Toast.makeText(this, "La localidad es obligatoria", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-            Toast.makeText(this, mensaje, Toast.LENGTH_LONG).show();
+            // 🔹 Obtener UID del usuario autenticado
+            String uid = mAuth.getCurrentUser() != null ? mAuth.getCurrentUser().getUid() : null;
+
+            if (uid == null) {
+                Toast.makeText(this, "Error: usuario no autenticado", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // 🔹 Crear mapa con los datos del anuncio
+            Map<String, Object> anuncio = new HashMap<>();
+            anuncio.put("descripcion", descripcion);
+            anuncio.put("telefono", telefono);
+            anuncio.put("localidad", localidad);
+            anuncio.put("latitud", latitudSeleccionada);    // <-- Añadido
+            anuncio.put("longitud", longitudSeleccionada);  // <-- Añadido
+            anuncio.put("timestamp", System.currentTimeMillis());
+            anuncio.put("imagenUri", imagenUri != null ? imagenUri.toString() : null);
+
+            // 🔹 Guardar en Firestore en users/{uid}/anuncios/
+            db.collection("users")
+                    .document(uid)
+                    .collection("anuncios")
+                    .add(anuncio)
+                    .addOnSuccessListener(documentReference -> {
+                        Toast.makeText(this, "✅ Anuncio publicado correctamente", Toast.LENGTH_SHORT).show();
+                        // Puedes limpiar los campos
+                        editDescripcion.setText("");
+                        editTelefono.setText("");
+                        searchAutoComplete.setText("");
+                        imagePreview.setImageDrawable(null);
+                        imagenUri = null;
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(this, "❌ Error al guardar el anuncio: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    });
         });
+
 
     }
 
@@ -281,6 +369,30 @@ public class CrearAnuncioActivity extends AppCompatActivity {
                     } catch (Exception e) {
                         mostrarToast("Error procesando la respuesta");
                         e.printStackTrace();
+                    }
+
+                    localidadesConCoordenadas.clear(); // limpiar lista antes de agregar nuevos resultados
+                    for (int i = 0; i < response.length(); i++) {
+                        try {
+                            JSONObject obj = response.getJSONObject(i);
+                            if (obj.has("lat") && obj.has("lon") && obj.has("display_name")) {
+                                String displayName = obj.getString("display_name");
+                                String lat = obj.getString("lat");
+                                String lon = obj.getString("lon");
+
+                                String corto = abreviarDisplayName(displayName, 3);
+                                resultados.add(corto);
+
+                                Map<String, String> map = new HashMap<>();
+                                map.put("nombre", corto);
+                                map.put("lat", lat);
+                                map.put("lon", lon);
+                                localidadesConCoordenadas.add(map);
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            // Puedes ignorar o loguear la posición i
+                        }
                     }
                 },
                 error -> mostrarToast("Error de red: " + error.getMessage())

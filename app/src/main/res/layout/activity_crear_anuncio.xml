@@ -32,6 +32,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
+            android:layout_marginTop="24dp"
             app:startIconDrawable="@android:drawable/ic_menu_search"
             android:hint="Buscar localidad"
             app:layout_constraintTop_toBottomOf="@id/topAppBar"
@@ -55,6 +56,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
+            android:layout_marginTop="24dp"
             android:hint="Descrpción"
             app:layout_constraintTop_toBottomOf="@id/searchInputLayout"
             app:layout_constraintStart_toStartOf="parent"
@@ -77,6 +79,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
+            android:layout_marginTop="24dp"
             android:hint="Número de teléfono"
             app:layout_constraintTop_toBottomOf="@id/descriptionInputLayout"
             app:layout_constraintStart_toStartOf="parent"
@@ -98,8 +101,12 @@
             android:text="Subir Imagen (Opcional)"
             app:layout_constraintTop_toBottomOf="@id/phoneInputLayout"
             app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:textSize="16sp"
+            android:paddingVertical="16dp"
+            android:paddingHorizontal="54dp"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp" />
+            android:layout_marginTop="24dp" />
 
         <!-- Vista previa de la imagen seleccionada -->
         <ImageView
@@ -107,9 +114,12 @@
             android:layout_width="100dp"
             android:layout_height="100dp"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="12dp"
+            android:background="#E0E0E0"
+            android:src="@drawable/ic_menu"
             app:layout_constraintTop_toBottomOf="@id/buttonUploadImage"
             app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             android:scaleType="centerCrop"
             android:contentDescription="Vista previa de la imagen" />
 
@@ -119,6 +129,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="Crear Anuncio"
+            android:layout_marginTop="12dp"
             android:layout_margin="16dp"
             app:layout_constraintTop_toBottomOf="@id/imagePreview"
             app:layout_constraintStart_toStartOf="parent"

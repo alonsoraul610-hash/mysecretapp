@@ -31,6 +31,8 @@
             android:exported="false"
             android:label="Crear Anuncio" />
 
+        <activity android:name=".DetalleAnuncioActivity" />
+
     </application>
 
 </manifest>
