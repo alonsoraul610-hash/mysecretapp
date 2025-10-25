@@ -50,10 +50,9 @@ import com.google.firebase.firestore.SetOptions;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
+
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.SetOptions;
+
 
 
 
@@ -225,6 +224,7 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(new Intent(this, MainActivity.class));
             } else if (id == R.id.nav_profile) {
                 Toast.makeText(this, "Perfil seleccionado", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, PerfilActivity.class));
             } else if (id == R.id.nav_favoritos) {
                 Toast.makeText(this, "Favoritos seleccionado", Toast.LENGTH_SHORT).show();
             } else if (id == R.id.nav_settings) {

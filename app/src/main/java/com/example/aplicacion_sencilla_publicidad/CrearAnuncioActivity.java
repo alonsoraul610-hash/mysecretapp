@@ -171,6 +171,7 @@ public class CrearAnuncioActivity extends AppCompatActivity {
                 startActivity(new Intent(this, MainActivity.class));
             } else if (id == R.id.nav_profile) {
                 Toast.makeText(this, "Perfil seleccionado", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, PerfilActivity.class));
             } else if (id == R.id.nav_favoritos) {
                 Toast.makeText(this, "Favoritos seleccionado", Toast.LENGTH_SHORT).show();
             } else if (id == R.id.nav_settings) {

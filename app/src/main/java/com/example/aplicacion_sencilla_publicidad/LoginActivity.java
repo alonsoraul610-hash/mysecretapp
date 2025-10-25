@@ -12,6 +12,7 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.GoogleAuthProvider;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -26,6 +27,14 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            // Usuario ya logueado → ir directo al MainActivity
+            startActivity(new Intent(this, MainActivity.class));
+            finish();
+            return; // evita ejecutar el resto de onCreate
+        }
+
         firebaseAuth = FirebaseAuth.getInstance();
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -39,9 +48,30 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void signInWithGoogle() {
+        SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
+        boolean cuentaBorrada = prefs.getBoolean("cuenta_borrada", false);
+
+        if (cuentaBorrada) {
+            // Forzar el selector de cuentas
+            googleSignInClient.signOut().addOnCompleteListener(task -> {
+                googleSignInClient.revokeAccess().addOnCompleteListener(task1 -> {
+                    lanzarGoogleSignInIntent();
+                });
+            });
+
+            // Resetear flag
+            prefs.edit().putBoolean("cuenta_borrada", false).apply();
+        } else {
+            // Inicio normal
+            lanzarGoogleSignInIntent();
+        }
+    }
+
+    private void lanzarGoogleSignInIntent() {
         Intent signInIntent = googleSignInClient.getSignInIntent();
         startActivityForResult(signInIntent, RC_SIGN_IN);
     }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {

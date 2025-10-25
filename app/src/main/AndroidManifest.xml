@@ -32,6 +32,7 @@
             android:label="Crear Anuncio" />
 
         <activity android:name=".DetalleAnuncioActivity" />
+        <activity android:name=".PerfilActivity" />
 
     </application>
 
