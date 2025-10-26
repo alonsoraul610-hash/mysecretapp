@@ -20,6 +20,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.material.appbar.MaterialToolbar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 
 import com.google.android.material.navigation.NavigationView;
@@ -35,10 +37,16 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class PerfilActivity extends AppCompatActivity {
+
+    private AnuncioAdapterPerfil adapter; // <-- Variable de clase
 
 
     @Override
@@ -74,7 +82,7 @@ public class PerfilActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         //Cambiar el título dinámicamente:
-        getSupportActionBar().setTitle("Buscador");
+        getSupportActionBar().setTitle("Mi perfil");
 
 
 
@@ -237,9 +245,104 @@ public class PerfilActivity extends AppCompatActivity {
 
         });
 
-
-
         //FINAL------botones de cerrar sesion y eliminar cuenta ------------//
+
+
+
+        // para listar los anuncios creados por el usuario
+
+        // RecyclerView para los anuncios
+        RecyclerView recyclerView = findViewById(R.id.recyclerAnunciosUsuario);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        List<Anuncio> listaAnuncios = new ArrayList<>();
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        if (user == null) {
+            Toast.makeText(this, "No hay usuario logueado.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String uid = user.getUid();
+
+// Configuramos el adaptador (sin funcionalidad de eliminar todavía)
+        adapter = new AnuncioAdapterPerfil(
+                this,
+                listaAnuncios,
+                anuncio -> {
+                    // Abrir DetalleAnuncioActivity
+                    Intent intent = new Intent(PerfilActivity.this, DetalleAnuncioActivity.class);
+                    intent.putExtra("descripcion", anuncio.getDescripcion());
+                    intent.putExtra("localidad", anuncio.getLocalidad());
+                    intent.putExtra("telefono", anuncio.getTelefono());
+                    intent.putExtra("imagenUrl", anuncio.getImagenUrl());
+                    startActivity(intent);
+                },
+                (anuncio, position) -> {
+
+
+                    // Confirmar antes de eliminar
+                    new androidx.appcompat.app.AlertDialog.Builder(PerfilActivity.this)
+                            .setTitle("Eliminar anuncio")
+                            .setMessage("¿Estás seguro de que quieres eliminar este anuncio?")
+                            .setPositiveButton("Sí", (dialog, which) -> {
+                                //FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                                if (user != null) {
+                                    //FirebaseFirestore db = FirebaseFirestore.getInstance();
+                                    // 🔹 El ID del documento debe estar en el objeto Anuncio
+                                    String anuncioId = anuncio.getId(); // Asegúrate de tener un campo 'id' en Anuncio
+                                    db.collection("users")
+                                            .document(user.getUid())
+                                            .collection("anuncios")
+                                            .document(anuncioId)
+                                            .delete()
+                                            .addOnSuccessListener(aVoid -> {
+                                                // Borrar localmente y actualizar RecyclerView
+                                                listaAnuncios.remove(position);
+                                                adapter.notifyItemRemoved(position);
+                                                Toast.makeText(PerfilActivity.this, "Anuncio eliminado", Toast.LENGTH_SHORT).show();
+                                            })
+                                            .addOnFailureListener(e -> {
+                                                Toast.makeText(PerfilActivity.this, "Error al eliminar anuncio: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                            });
+                                }
+                            })
+                            .setNegativeButton("Cancelar", null)
+                            .show();
+                }
+        );
+
+
+        recyclerView.setAdapter(adapter);
+
+// Cargar los anuncios de Firestore
+        db.collection("users")
+                .document(uid)
+                .collection("anuncios")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    listaAnuncios.clear();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        Anuncio anuncio = doc.toObject(Anuncio.class);
+                        if (anuncio != null) {
+                            anuncio.setId(doc.getId()); // 🔹 Guardamos el ID del documento
+                            listaAnuncios.add(anuncio);
+                        }
+                    }
+                    adapter.notifyDataSetChanged();
+
+                    if (listaAnuncios.isEmpty()) {
+                        Toast.makeText(this, "Todavía no has publicado ningún anuncio.", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error al cargar anuncios: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e("PerfilActivity", "Error Firestore: ", e);
+                });
+
+
+
 
     }
 

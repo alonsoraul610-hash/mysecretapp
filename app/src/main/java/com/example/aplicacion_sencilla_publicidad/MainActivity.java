@@ -9,6 +9,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import android.util.Log;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 import android.net.Uri;
@@ -77,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerAnuncios;
     private List<Anuncio> listaAnuncios = new ArrayList<>();
     private AnuncioAdapter anuncioAdapter;
+    private EditText editRadio;
 
 
 
@@ -85,6 +87,37 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+        editRadio = findViewById(R.id.editRadio);
+        //para que cada vez que se modifique el valor del radio se lance una busqueda
+        editRadio.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // No necesitamos hacer nada aquí
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Cada vez que cambia el texto, lanzamos la búsqueda
+                double radio = 0;
+                try {
+                    radio = Double.parseDouble(s.toString());
+                } catch (NumberFormatException e) {
+                    radio = 0; // valor por defecto si el usuario borra el texto
+                }
+
+                // Llamamos a la búsqueda solo si ya hay coordenadas seleccionadas
+                if (selectedLat != 0 && selectedLon != 0) {
+                    buscarAnunciosPorCoordenadas(selectedLat, selectedLon, radio);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // No necesitamos hacer nada aquí
+            }
+        });
+
+        //fin para que cada vez que se modifique el valor del radio se lance una busqueda
 
 
         // INICIO ---------FIREBASE   y FIRESTORE -------------//
@@ -268,8 +301,17 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Seleccionado: " + seleccion +
                         "\nLat: " + selectedLat + ", Lon: " + selectedLon, Toast.LENGTH_SHORT).show();
 
+                // 🔹 par el radio
+
+                double radio =0;
+                try {
+                    radio = Double.parseDouble(editRadio.getText().toString());
+                } catch (NumberFormatException e) {
+                    radio = 0; // si no es válido, tomamos 0 por defecto
+                }
                 // 🔹 Llama aquí a la búsqueda en Firebase
-                buscarAnunciosPorCoordenadas(selectedLat, selectedLon);
+                buscarAnunciosPorCoordenadas(selectedLat, selectedLon, radio);
+                //buscarAnunciosPorCoordenadas(selectedLat, selectedLon);
             }
         });
 
@@ -282,43 +324,9 @@ public class MainActivity extends AppCompatActivity {
         double lon = selectedLon;
 
 // Tolerancia pequeña por si hay ligeras variaciones
-        double epsilon = 0.0001; // antes 0.0001
+       // double epsilon = 0.0001; // antes 0.0001
 
 // 🔹 Buscar todos los anuncios de todos los usuarios
-        /*
-        db.collectionGroup("anuncios")
-                .whereGreaterThanOrEqualTo("lat", lat - epsilon)
-                .whereLessThanOrEqualTo("lat", lat + epsilon)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<DocumentSnapshot> anuncios = queryDocumentSnapshots.getDocuments();
-                    List<Map<String, Object>> coincidencias = new ArrayList<>();
-
-                    for (DocumentSnapshot doc : anuncios) {
-                        Double lonAnuncio = doc.getDouble("lon");
-                        if (lonAnuncio != null && Math.abs(lonAnuncio - lon) < epsilon) {
-                            coincidencias.add(doc.getData());
-                        }
-                    }
-
-                    if (coincidencias.isEmpty()) {
-                        Toast.makeText(this, "No hay anuncios en esta localidad", Toast.LENGTH_SHORT).show();
-                    } else {
-                        for (Map<String, Object> anuncio : coincidencias) {
-                            String desc = (String) anuncio.get("descripcion");
-                            String tel = (String) anuncio.get("telefono");
-                            String loc = (String) anuncio.get("localidad");
-                            Log.d("AnuncioCoincidente", "📍 " + loc + " | " + desc + " | " + tel);
-                        }
-                        Toast.makeText(this, "Se encontraron " + coincidencias.size() + " anuncios", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Log.e("FirestoreError", "Error al buscar anuncios", e);
-                });
-
-         */
-
 
 
         //esto es para mostrar los anuncios por pantalla
@@ -333,8 +341,6 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
         recyclerAnuncios.setAdapter(anuncioAdapter);
-
-
 
 
     }
@@ -478,46 +484,10 @@ public class MainActivity extends AppCompatActivity {
         @Override public void afterTextChanged(Editable s) {}
     }
 
-   /* //esta es la version en la que muestra los anuncios por el logcat
-    private void buscarAnunciosPorCoordenadas(double lat, double lon) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        double epsilon = 0.0001;
-
-        Log.d("BusquedaAnuncios", "Buscando anuncios cerca de Lat: " + lat + ", Lon: " + lon + ", Epsilon: " + epsilon);
-
-        db.collectionGroup("anuncios")
-                .whereGreaterThanOrEqualTo("latitud", lat - epsilon)
-                .whereLessThanOrEqualTo("latitud", lat + epsilon)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<DocumentSnapshot> anuncios = queryDocumentSnapshots.getDocuments();
-                    List<Map<String, Object>> coincidencias = new ArrayList<>();
-
-                    for (DocumentSnapshot doc : anuncios) {
-                        Double lonAnuncio = doc.getDouble("longitud");
-                        if (lonAnuncio != null && Math.abs(lonAnuncio - lon) < epsilon) {
-                            coincidencias.add(doc.getData());
-                        }
-                    }
-
-                    if (coincidencias.isEmpty()) {
-                        Toast.makeText(this, "No hay anuncios en esta localidad", Toast.LENGTH_SHORT).show();
-                    } else {
-                        for (Map<String, Object> anuncio : coincidencias) {
-                            String desc = (String) anuncio.get("descripcion");
-                            String tel = (String) anuncio.get("telefono");
-                            String loc = (String) anuncio.get("localidad");
-                            Log.d("AnuncioCoincidente", "📍 " + loc + " | " + desc + " | " + tel);
-                        }
-                        Toast.makeText(this, "Se encontraron " + coincidencias.size() + " anuncios", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e -> Log.e("FirestoreError", "Error al buscar anuncios", e));
-    }
-
-    */
 
 
+
+    /*
     private void buscarAnunciosPorCoordenadas(double lat, double lon) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         double epsilon = 0.0001;
@@ -551,6 +521,85 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> Log.e("FirestoreError", "Error al buscar anuncios", e));
     }
+
+     */
+    private void buscarAnunciosPorCoordenadas(double lat, double lon, double radioKm) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        if (radioKm == 0) {
+            // Búsqueda exacta (como ya tenías)
+            double epsilon = 0.0001;
+
+            db.collectionGroup("anuncios")
+                    .whereGreaterThanOrEqualTo("latitud", lat - epsilon)
+                    .whereLessThanOrEqualTo("latitud", lat + epsilon)
+                    .get()
+                    .addOnSuccessListener(queryDocumentSnapshots -> {
+                        listaAnuncios.clear();
+
+                        for (DocumentSnapshot doc : queryDocumentSnapshots) {
+                            Double lonAnuncio = doc.getDouble("longitud");
+                            if (lonAnuncio != null && Math.abs(lonAnuncio - lon) < epsilon) {
+                                String descripcion = doc.getString("descripcion");
+                                String telefono = doc.getString("telefono");
+                                String localidad = doc.getString("localidad");
+                                String imagenUrl = doc.getString("imagenUrl");
+
+                                listaAnuncios.add(new Anuncio(descripcion, telefono, localidad, imagenUrl));
+                            }
+                        }
+
+                        anuncioAdapter.notifyDataSetChanged();
+
+                        if (listaAnuncios.isEmpty()) {
+                            Toast.makeText(this, "No hay anuncios en esta localidad", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(this, "Se encontraron " + listaAnuncios.size() + " anuncios", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .addOnFailureListener(e -> Log.e("FirestoreError", "Error al buscar anuncios", e));
+
+        } else {
+            // Búsqueda por radio
+            double deltaLat = radioKm / 111.0; // 1° aprox = 111 km
+            double deltaLon = radioKm / (111.0 * Math.cos(Math.toRadians(lat)));
+
+            double minLat = lat - deltaLat;
+            double maxLat = lat + deltaLat;
+            double minLon = lon - deltaLon;
+            double maxLon = lon + deltaLon;
+
+            db.collectionGroup("anuncios")
+                    .whereGreaterThanOrEqualTo("latitud", minLat)
+                    .whereLessThanOrEqualTo("latitud", maxLat)
+                    .get()
+                    .addOnSuccessListener(queryDocumentSnapshots -> {
+                        listaAnuncios.clear();
+
+                        for (DocumentSnapshot doc : queryDocumentSnapshots) {
+                            Double lonAnuncio = doc.getDouble("longitud");
+                            if (lonAnuncio != null && lonAnuncio >= minLon && lonAnuncio <= maxLon) {
+                                String descripcion = doc.getString("descripcion");
+                                String telefono = doc.getString("telefono");
+                                String localidad = doc.getString("localidad");
+                                String imagenUrl = doc.getString("imagenUrl");
+
+                                listaAnuncios.add(new Anuncio(descripcion, telefono, localidad, imagenUrl));
+                            }
+                        }
+
+                        anuncioAdapter.notifyDataSetChanged();
+
+                        if (listaAnuncios.isEmpty()) {
+                            Toast.makeText(this, "No hay anuncios en el radio seleccionado", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(this, "Se encontraron " + listaAnuncios.size() + " anuncios", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .addOnFailureListener(e -> Log.e("FirestoreError", "Error al buscar anuncios", e));
+        }
+    }
+
 
 
 
