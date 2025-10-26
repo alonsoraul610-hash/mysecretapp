@@ -1,6 +1,7 @@
 package com.example.aplicacion_sencilla_publicidad;
 
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
@@ -12,9 +13,12 @@ import androidx.core.view.WindowInsetsCompat;
 
 import android.util.Log;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 
+import com.bumptech.glide.Glide;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -44,7 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class PerfilActivity extends AppCompatActivity {
+public class PerfilActivity extends AppCompatActivity  {
 
     private AnuncioAdapterPerfil adapter; // <-- Variable de clase
 
@@ -54,6 +58,9 @@ public class PerfilActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_perfil);
+
+
+
 
 
 
@@ -102,6 +109,7 @@ public class PerfilActivity extends AppCompatActivity {
         toggle.syncState();
 
         NavigationView navigationView = findViewById(R.id.navigationView);
+        actualizarHeaderUsuario(navigationView);
 
         View headerView = navigationView.getHeaderView(0);
 
@@ -310,7 +318,15 @@ public class PerfilActivity extends AppCompatActivity {
                             })
                             .setNegativeButton("Cancelar", null)
                             .show();
-                }
+                },
+        (anuncio, position) -> { // EDITAR
+            Intent intent = new Intent(PerfilActivity.this, EditarAnuncioActivity.class);
+            intent.putExtra("id", anuncio.getId());
+            intent.putExtra("descripcion", anuncio.getDescripcion());
+            intent.putExtra("localidad", anuncio.getLocalidad());
+            intent.putExtra("telefono", anuncio.getTelefono());
+            startActivity(intent);
+        }
         );
 
 
@@ -344,7 +360,76 @@ public class PerfilActivity extends AppCompatActivity {
 
 
 
+
+
+
+
+
+
+
+
     }
+
+
+
+
+    //para actualizar la lista cuando se edita un anuncio
+    @Override
+    protected void onResume() {
+        super.onResume();
+        recargarAnuncios();
+    }
+
+    private void recargarAnuncios() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        List<Anuncio> listaAnuncios = new ArrayList<>();
+
+        db.collection("users")
+                .document(user.getUid())
+                .collection("anuncios")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    listaAnuncios.clear();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        Anuncio anuncio = doc.toObject(Anuncio.class);
+                        if (anuncio != null) {
+                            anuncio.setId(doc.getId());
+                            listaAnuncios.add(anuncio);
+                        }
+                    }
+
+                    // Actualizar los datos del adaptador
+                    adapter.actualizarLista(listaAnuncios);
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error al actualizar anuncios: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    protected void actualizarHeaderUsuario(NavigationView navigationView) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null && navigationView != null) {
+            View headerView = navigationView.getHeaderView(0);
+            TextView textUserName = headerView.findViewById(R.id.textUserName);
+            ImageView imageProfile = headerView.findViewById(R.id.imageProfile);
+
+            String nombreUsuario = user.getDisplayName();
+            if (nombreUsuario != null && !nombreUsuario.isEmpty()) {
+                textUserName.setText(nombreUsuario);
+            }
+
+            Uri fotoPerfil = user.getPhotoUrl();
+            if (fotoPerfil != null) {
+                Glide.with(this).load(fotoPerfil).placeholder(R.drawable.ic_menu).into(imageProfile);
+            } else {
+                imageProfile.setImageResource(R.drawable.ic_menu);
+            }
+        }
+    }
+
 
 }
 

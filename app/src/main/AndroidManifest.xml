@@ -33,6 +33,7 @@
 
         <activity android:name=".DetalleAnuncioActivity" />
         <activity android:name=".PerfilActivity" />
+        <activity android:name=".EditarAnuncioActivity" />
 
     </application>
 

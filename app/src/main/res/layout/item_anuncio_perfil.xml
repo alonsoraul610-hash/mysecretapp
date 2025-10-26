@@ -63,16 +63,30 @@
         </LinearLayout>
 
         <!-- Botón eliminar -->
+        <!-- Botón eliminar (mitad inferior) -->
+        <!-- Botón editar (mitad superior) -->
+        <ImageButton
+            android:id="@+id/btnEditar"
+            android:layout_width="40dp"
+            android:layout_height="0dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_menu"
+            android:contentDescription="Editar anuncio"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/imageAnuncio"
+            app:layout_constraintBottom_toTopOf="@id/btnEliminar"/>
+
+        <!-- Botón eliminar (mitad inferior) -->
         <ImageButton
             android:id="@+id/btnEliminar"
             android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_height="0dp"
             android:background="@android:color/transparent"
             android:src="@drawable/ic_menu"
             android:contentDescription="Eliminar anuncio"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/imageAnuncio"
-            app:layout_constraintBottom_toBottomOf="@id/imageAnuncio" />
+            app:layout_constraintTop_toBottomOf="@id/btnEditar"
+            app:layout_constraintBottom_toBottomOf="@id/imageAnuncio"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

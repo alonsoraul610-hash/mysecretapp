@@ -17,6 +17,7 @@ public class AnuncioAdapterPerfil extends RecyclerView.Adapter<AnuncioAdapterPer
     private List<Anuncio> listaAnuncios;
     private OnAnuncioClickListener listener;
     private OnEliminarClickListener eliminarListener;
+    private OnEditarClickListener editarListener;
 
     // Callback para click general en el anuncio
     public interface OnAnuncioClickListener {
@@ -30,11 +31,13 @@ public class AnuncioAdapterPerfil extends RecyclerView.Adapter<AnuncioAdapterPer
 
     public AnuncioAdapterPerfil(Context context, List<Anuncio> listaAnuncios,
                                 OnAnuncioClickListener listener,
-                                OnEliminarClickListener eliminarListener) {
+                                OnEliminarClickListener eliminarListener,
+                                OnEditarClickListener editarListener) {
         this.context = context;
         this.listaAnuncios = listaAnuncios;
         this.listener = listener;
         this.eliminarListener = eliminarListener;
+        this.editarListener = editarListener;
     }
 
     @Override
@@ -67,6 +70,12 @@ public class AnuncioAdapterPerfil extends RecyclerView.Adapter<AnuncioAdapterPer
                 eliminarListener.onEliminarClick(anuncio, position);
             }
         });
+
+        holder.btnEditar.setOnClickListener(v -> {
+            if (editarListener != null) {
+                editarListener.onEditarClick(anuncio, position);
+            }
+        });
     }
 
     @Override
@@ -78,6 +87,7 @@ public class AnuncioAdapterPerfil extends RecyclerView.Adapter<AnuncioAdapterPer
         ImageView imageAnuncio;
         TextView textLocalidad, textDescripcion, textTelefono;
         ImageButton btnEliminar;
+        ImageButton btnEditar;
 
         public AnuncioViewHolder(View itemView) {
             super(itemView);
@@ -86,6 +96,7 @@ public class AnuncioAdapterPerfil extends RecyclerView.Adapter<AnuncioAdapterPer
             textDescripcion = itemView.findViewById(R.id.textDescripcion);
             textTelefono = itemView.findViewById(R.id.textTelefono);
             btnEliminar = itemView.findViewById(R.id.btnEliminar);
+            btnEditar = itemView.findViewById(R.id.btnEditar);
         }
     }
 
@@ -94,4 +105,18 @@ public class AnuncioAdapterPerfil extends RecyclerView.Adapter<AnuncioAdapterPer
         listaAnuncios.remove(position);
         notifyItemRemoved(position);
     }
+
+
+    // Callback para click en el botón editar
+    public interface OnEditarClickListener {
+        void onEditarClick(Anuncio anuncio, int position);
+    }
+
+    public void actualizarLista(List<Anuncio> nuevaLista) {
+        this.listaAnuncios.clear();
+        this.listaAnuncios.addAll(nuevaLista);
+        notifyDataSetChanged();
+    }
+
+
 }

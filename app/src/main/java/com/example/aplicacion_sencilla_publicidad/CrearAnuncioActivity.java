@@ -13,6 +13,7 @@ import android.widget.Toast;
 import android.net.Uri;
 
 import com.android.volley.RequestQueue;
+import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -47,6 +48,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 
 //imports del firebase
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import org.json.JSONException;
@@ -155,6 +157,7 @@ public class CrearAnuncioActivity extends AppCompatActivity {
         toggle.syncState();
 
         NavigationView navigationView = findViewById(R.id.navigationView);
+        actualizarHeaderUsuario(navigationView);
 
         View headerView = navigationView.getHeaderView(0);
         TextView textUserName = headerView.findViewById(R.id.textUserName);
@@ -439,6 +442,27 @@ public class CrearAnuncioActivity extends AppCompatActivity {
     abstract class SimpleTextWatcher implements TextWatcher {
         @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
         @Override public void afterTextChanged(Editable s) {}
+    }
+
+    protected void actualizarHeaderUsuario(NavigationView navigationView) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null && navigationView != null) {
+            View headerView = navigationView.getHeaderView(0);
+            TextView textUserName = headerView.findViewById(R.id.textUserName);
+            ImageView imageProfile = headerView.findViewById(R.id.imageProfile);
+
+            String nombreUsuario = user.getDisplayName();
+            if (nombreUsuario != null && !nombreUsuario.isEmpty()) {
+                textUserName.setText(nombreUsuario);
+            }
+
+            Uri fotoPerfil = user.getPhotoUrl();
+            if (fotoPerfil != null) {
+                Glide.with(this).load(fotoPerfil).placeholder(R.drawable.ic_menu).into(imageProfile);
+            } else {
+                imageProfile.setImageResource(R.drawable.ic_menu);
+            }
+        }
     }
 
 
