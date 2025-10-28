@@ -18,7 +18,7 @@
             android:layout_width="100dp"
             android:layout_height="100dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/ic_menu" />
+            android:src="@drawable/ic_persona" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -33,13 +33,15 @@
                 android:layout_height="wrap_content"
                 android:text="Localidad"
                 android:textStyle="bold"
-                android:textSize="16sp" />
+                android:textSize="14sp" />
 
             <TextView
                 android:id="@+id/textDescripcion"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Descripción del anuncio"
+                android:maxLines="10"
+                android:ellipsize="end"
                 android:textSize="14sp"
                 android:paddingTop="4dp" />
 

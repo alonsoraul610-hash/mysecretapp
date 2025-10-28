@@ -18,7 +18,7 @@
             android:layout_width="100dp"
             android:layout_height="100dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/ic_menu"
+            android:src="@drawable/ic_persona"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
@@ -49,6 +49,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Descripción del anuncio"
+                android:maxLines="10"
+                android:ellipsize="end"
                 android:textSize="14sp"
                 android:paddingTop="4dp" />
 
@@ -70,7 +72,7 @@
             android:layout_width="40dp"
             android:layout_height="0dp"
             android:background="@android:color/transparent"
-            android:src="@drawable/ic_menu"
+            android:src="@drawable/ic_edit"
             android:contentDescription="Editar anuncio"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/imageAnuncio"
@@ -82,7 +84,7 @@
             android:layout_width="40dp"
             android:layout_height="0dp"
             android:background="@android:color/transparent"
-            android:src="@drawable/ic_menu"
+            android:src="@drawable/ic_eliminar"
             android:contentDescription="Eliminar anuncio"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/btnEditar"

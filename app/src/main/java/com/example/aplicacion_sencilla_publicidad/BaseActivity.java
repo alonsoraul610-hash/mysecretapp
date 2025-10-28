@@ -30,9 +30,9 @@ public abstract class BaseActivity extends AppCompatActivity {
 
             Uri fotoPerfil = user.getPhotoUrl();
             if (fotoPerfil != null) {
-                Glide.with(this).load(fotoPerfil).placeholder(R.drawable.ic_menu).into(imageProfile);
+                Glide.with(this).load(fotoPerfil).placeholder(R.drawable.ic_persona).into(imageProfile);
             } else {
-                imageProfile.setImageResource(R.drawable.ic_menu);
+                imageProfile.setImageResource(R.drawable.ic_persona);
             }
         }
     }

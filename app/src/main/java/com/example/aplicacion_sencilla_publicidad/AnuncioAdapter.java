@@ -36,23 +36,35 @@ public class AnuncioAdapter extends RecyclerView.Adapter<AnuncioAdapter.AnuncioV
     @Override
     public void onBindViewHolder(AnuncioViewHolder holder, int position) {
         Anuncio anuncio = listaAnuncios.get(position);
+
         holder.textLocalidad.setText(anuncio.getLocalidad());
         holder.textDescripcion.setText(anuncio.getDescripcion());
-        holder.textTelefono.setText(anuncio.getTelefono());
+        holder.textTelefono.setText("Tlf: " + anuncio.getTelefono());
 
-        Glide.with(context)
-                .load(anuncio.getImagenUrl())
-                .placeholder(R.drawable.ic_menu)
-                .into(holder.imageAnuncio);
+        // ✅ Cargar imagen solo si existe
+        String imagenUrl = anuncio.getImagenUri();
 
-        // 🔹 AÑADIMOS EL CLICK AQUÍ
+        Log.d("AnuncioAdapter", "Imagen URL para el anuncio '" + anuncio.getDescripcion() + "': " + imagenUrl);
+
+        if (imagenUrl != null && !imagenUrl.trim().isEmpty() && !imagenUrl.equals("null")) {
+            Glide.with(context)
+                    .load(imagenUrl)
+                    .placeholder(R.drawable.ic_persona) // mientras carga
+                    .error(R.drawable.ic_persona)       // si falla la carga
+                    .into(holder.imageAnuncio);
+        } else {
+            holder.imageAnuncio.setImageResource(R.drawable.ic_persona);
+        }
+
+        // 🔹 Click listener
         holder.itemView.setOnClickListener(v -> {
-            Log.d("AnuncioAdapter", "✅ Click detectado en anuncio: " + anuncio.getDescripcion());
+            Log.d("AnuncioAdapter", "✅ Click en anuncio: " + anuncio.getDescripcion());
             if (listener != null) {
                 listener.onAnuncioClick(anuncio);
             }
         });
     }
+
 
     @Override
     public int getItemCount() {

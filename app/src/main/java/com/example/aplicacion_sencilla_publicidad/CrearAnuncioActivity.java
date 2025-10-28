@@ -4,11 +4,13 @@ import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 
+import android.util.Log;
 import android.widget.Toast;
 import android.net.Uri;
 
@@ -50,6 +52,10 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -93,7 +99,11 @@ public class CrearAnuncioActivity extends AppCompatActivity {
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                     imagenUri = result.getData().getData();
-                    imagePreview.setImageURI(imagenUri);
+                    // Cargar con Glide para manejar uri null o problemas de escalado
+                    Glide.with(this)
+                            .load(imagenUri)
+                            .placeholder(R.drawable.ic_persona) // imagen por defecto
+                            .into(imagePreview);
                 }
             });
 
@@ -104,6 +114,9 @@ public class CrearAnuncioActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_crear_anuncio);
+
+        // Forzar modo claro
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
 
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
@@ -137,7 +150,7 @@ public class CrearAnuncioActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         //Cambiar el título dinámicamente:
-        getSupportActionBar().setTitle("Buscador");
+        getSupportActionBar().setTitle("Crear Anuncio");
 
 
 
@@ -177,25 +190,24 @@ public class CrearAnuncioActivity extends AppCompatActivity {
                 startActivity(new Intent(this, PerfilActivity.class));
             } else if (id == R.id.nav_favoritos) {
                 Toast.makeText(this, "Favoritos seleccionado", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity.class));
             } else if (id == R.id.nav_settings) {
                 Toast.makeText(this, "Configuración seleccionada", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity.class));
             } else if (id == R.id.nav_help) {
                 Toast.makeText(this, "Ayuda seleccionada", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity.class));
             } else if (id == R.id.nav_logout) {
                 Toast.makeText(this, "Cerrar sesión", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity_v2.class));
+            } else if (id == R.id.nav_message) {
+                Toast.makeText(this, "Cerrar sesión", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity.class));
             } else if (id == R.id.nav_create) {
                 Toast.makeText(this, "Crear anuncio", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(this, CrearAnuncioActivity.class));
-                /*getSupportFragmentManager()
-                        .beginTransaction()
-                        .replace(R.id.fragment_container, new CrearAnuncioFragment())
-                        .addToBackStack(null)
-                        .commit();
                 getSupportActionBar().setTitle("Crear anuncio");
-                 */
-
+                startActivity(new Intent(this, CrearAnuncioActivity.class));
             }
-
             drawerLayout.closeDrawers(); // Cierra el menú tras pulsar
             return true;
         });
@@ -286,25 +298,55 @@ public class CrearAnuncioActivity extends AppCompatActivity {
             anuncio.put("latitud", latitudSeleccionada);    // <-- Añadido
             anuncio.put("longitud", longitudSeleccionada);  // <-- Añadido
             anuncio.put("timestamp", System.currentTimeMillis());
-            anuncio.put("imagenUri", imagenUri != null ? imagenUri.toString() : null);
+            if (imagenUri != null) {
+                // Crear referencia Storage con nombre único
+                //FirebaseStorage storage = FirebaseStorage.getInstance();
+                FirebaseStorage storage = FirebaseStorage.getInstance("gs://my-secret-project-1420.firebasestorage.app");
+                StorageReference storageRef = storage.getReference()
+                        .child("anuncios/" + uid + "_" + System.currentTimeMillis() + ".jpg");
 
-            // 🔹 Guardar en Firestore en users/{uid}/anuncios/
-            db.collection("users")
-                    .document(uid)
-                    .collection("anuncios")
-                    .add(anuncio)
-                    .addOnSuccessListener(documentReference -> {
-                        Toast.makeText(this, "✅ Anuncio publicado correctamente", Toast.LENGTH_SHORT).show();
-                        // Puedes limpiar los campos
-                        editDescripcion.setText("");
-                        editTelefono.setText("");
-                        searchAutoComplete.setText("");
-                        imagePreview.setImageDrawable(null);
-                        imagenUri = null;
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(this, "❌ Error al guardar el anuncio: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    });
+                // Subir la imagen
+                storageRef.putFile(imagenUri)
+                        .addOnSuccessListener(taskSnapshot -> {
+                            // Obtener URL pública
+                            storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                                String imagenUrl = uri.toString();
+
+                                // Añadir URL al anuncio
+                                Map<String, Object> anuncioConImagen = new HashMap<>(anuncio);
+                                anuncioConImagen.put("imagenUri", imagenUrl);
+
+                                // Guardar en Firestore
+                                db.collection("users")
+                                        .document(uid)
+                                        .collection("anuncios")
+                                        .add(anuncioConImagen)
+                                        .addOnSuccessListener(documentReference -> {
+                                            Toast.makeText(this, "✅ Anuncio publicado correctamente", Toast.LENGTH_SHORT).show();
+                                            limpiarCampos();
+                                        })
+                                        .addOnFailureListener(e -> Toast.makeText(this, "❌ Error al guardar el anuncio: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                            });
+                        })
+                        .addOnFailureListener(e ->
+                                Log.e("FirebaseStorage", "❌ Error al subir la imagen: " + e.getMessage(), e)
+                        );
+
+            } else {
+                // Si no hay imagen, simplemente guarda el anuncio
+                db.collection("users")
+                        .document(uid)
+                        .collection("anuncios")
+                        .add(anuncio)
+                        .addOnSuccessListener(documentReference -> {
+                            Toast.makeText(this, "✅ Anuncio publicado correctamente", Toast.LENGTH_SHORT).show();
+                            limpiarCampos();
+                        })
+                        .addOnFailureListener(e -> Toast.makeText(this, "❌ Error al guardar el anuncio: " + e.getMessage(), Toast.LENGTH_LONG).show());
+            }
+
+
+
         });
 
 
@@ -403,8 +445,14 @@ public class CrearAnuncioActivity extends AppCompatActivity {
         ) {
             @Override
             public Map<String, String> getHeaders() {
-                return Map.of("User-Agent", "MiApp/1.0 (alonsoraul610@gmail.com)");
+                String email = "default@example.com";
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                if (user != null && user.getEmail() != null) {
+                    email = user.getEmail();
+                }
+                return Map.of("User-Agent", "MiApp/1.0 (" + email + ")");
             }
+
         };
 
         requestQueue.add(request);
@@ -458,11 +506,19 @@ public class CrearAnuncioActivity extends AppCompatActivity {
 
             Uri fotoPerfil = user.getPhotoUrl();
             if (fotoPerfil != null) {
-                Glide.with(this).load(fotoPerfil).placeholder(R.drawable.ic_menu).into(imageProfile);
+                Glide.with(this).load(fotoPerfil).placeholder(R.drawable.ic_persona).into(imageProfile);
             } else {
-                imageProfile.setImageResource(R.drawable.ic_menu);
+                imageProfile.setImageResource(R.drawable.ic_persona);
             }
         }
+    }
+
+    private void limpiarCampos() {
+        editDescripcion.setText("");
+        editTelefono.setText("");
+        searchAutoComplete.setText("");
+        imagePreview.setImageResource(R.drawable.ic_persona);
+        imagenUri = null;
     }
 
 

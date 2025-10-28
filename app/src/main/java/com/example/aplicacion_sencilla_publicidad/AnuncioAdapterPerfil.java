@@ -52,11 +52,11 @@ public class AnuncioAdapterPerfil extends RecyclerView.Adapter<AnuncioAdapterPer
 
         holder.textLocalidad.setText(anuncio.getLocalidad());
         holder.textDescripcion.setText(anuncio.getDescripcion());
-        holder.textTelefono.setText(anuncio.getTelefono());
+        holder.textTelefono.setText("Tlf : " +anuncio.getTelefono());
 
         Glide.with(context)
-                .load(anuncio.getImagenUrl())
-                .placeholder(R.drawable.ic_menu)
+                .load(anuncio.getImagenUri())
+                .placeholder(R.drawable.ic_persona)
                 .into(holder.imageAnuncio);
 
         // Click en todo el item

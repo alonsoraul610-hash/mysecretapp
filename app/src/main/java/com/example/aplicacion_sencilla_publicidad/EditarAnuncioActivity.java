@@ -12,6 +12,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -39,6 +40,9 @@ public class EditarAnuncioActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editar_anuncio);
 
+        // Forzar modo claro
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+
         // 🔹 Inicializar Firebase
         db = FirebaseFirestore.getInstance();
         auth = FirebaseAuth.getInstance();
@@ -65,7 +69,7 @@ public class EditarAnuncioActivity extends AppCompatActivity {
         editTelefono.setText(telefono);
         Glide.with(this)
                 .load(imagenActualUrl)
-                .placeholder(R.drawable.ic_menu)
+                .placeholder(R.drawable.ic_persona)
                 .into(imageEditarAnuncio);
 
         // 🔹 Selector de imagen

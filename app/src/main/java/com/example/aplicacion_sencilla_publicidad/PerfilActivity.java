@@ -6,6 +6,7 @@ import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -58,6 +59,8 @@ public class PerfilActivity extends AppCompatActivity  {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_perfil);
+        // Forzar modo claro
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
 
 
 
@@ -127,20 +130,24 @@ public class PerfilActivity extends AppCompatActivity  {
                 startActivity(new Intent(this, PerfilActivity.class));
             } else if (id == R.id.nav_favoritos) {
                 Toast.makeText(this, "Favoritos seleccionado", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity.class));
             } else if (id == R.id.nav_settings) {
                 Toast.makeText(this, "Configuración seleccionada", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity.class));
             } else if (id == R.id.nav_help) {
                 Toast.makeText(this, "Ayuda seleccionada", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity.class));
             } else if (id == R.id.nav_logout) {
                 Toast.makeText(this, "Cerrar sesión", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity_v2.class));
+            } else if (id == R.id.nav_message) {
+                Toast.makeText(this, "Cerrar sesión", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity.class));
             } else if (id == R.id.nav_create) {
                 Toast.makeText(this, "Crear anuncio", Toast.LENGTH_SHORT).show();
                 getSupportActionBar().setTitle("Crear anuncio");
                 startActivity(new Intent(this, CrearAnuncioActivity.class));
-
-
             }
-
             drawerLayout.closeDrawers(); // Cierra el menú tras pulsar
             return true;
         });
@@ -284,7 +291,7 @@ public class PerfilActivity extends AppCompatActivity  {
                     intent.putExtra("descripcion", anuncio.getDescripcion());
                     intent.putExtra("localidad", anuncio.getLocalidad());
                     intent.putExtra("telefono", anuncio.getTelefono());
-                    intent.putExtra("imagenUrl", anuncio.getImagenUrl());
+                    intent.putExtra("imagenUri", anuncio.getImagenUri());
                     startActivity(intent);
                 },
                 (anuncio, position) -> {
@@ -423,9 +430,9 @@ public class PerfilActivity extends AppCompatActivity  {
 
             Uri fotoPerfil = user.getPhotoUrl();
             if (fotoPerfil != null) {
-                Glide.with(this).load(fotoPerfil).placeholder(R.drawable.ic_menu).into(imageProfile);
+                Glide.with(this).load(fotoPerfil).placeholder(R.drawable.ic_persona).into(imageProfile);
             } else {
-                imageProfile.setImageResource(R.drawable.ic_menu);
+                imageProfile.setImageResource(R.drawable.ic_persona);
             }
         }
     }

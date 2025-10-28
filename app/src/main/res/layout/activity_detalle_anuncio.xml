@@ -32,8 +32,8 @@
                 android:id="@+id/imageDetalle"
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
-                android:scaleType="centerCrop"
-                android:src="@drawable/ic_menu"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_persona"
                 android:layout_marginBottom="16dp" />
 
             <TextView

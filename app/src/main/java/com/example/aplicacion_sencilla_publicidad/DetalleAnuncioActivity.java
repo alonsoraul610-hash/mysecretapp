@@ -4,6 +4,8 @@ import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
+
 import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 
@@ -13,6 +15,9 @@ public class DetalleAnuncioActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detalle_anuncio);
+
+        // Forzar modo claro
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
 
         // 🔹 Configurar la barra superior (Toolbar)
         MaterialToolbar toolbar = findViewById(R.id.topAppBar);
@@ -39,7 +44,7 @@ public class DetalleAnuncioActivity extends AppCompatActivity {
         String descripcion = getIntent().getStringExtra("descripcion");
         String telefono = getIntent().getStringExtra("telefono");
         String localidad = getIntent().getStringExtra("localidad");
-        String imagenUrl = getIntent().getStringExtra("imagenUrl");
+        String imagenUri = getIntent().getStringExtra("imagenUri");
 
         // 🔹 Asignar los datos
         textLocalidad.setText(localidad);
@@ -48,8 +53,8 @@ public class DetalleAnuncioActivity extends AppCompatActivity {
 
         // 🔹 Cargar imagen con Glide
         Glide.with(this)
-                .load(imagenUrl)
-                .placeholder(R.drawable.ic_menu)
+                .load(imagenUri)
+                .placeholder(R.drawable.ic_persona)
                 .into(imageView);
     }
 }

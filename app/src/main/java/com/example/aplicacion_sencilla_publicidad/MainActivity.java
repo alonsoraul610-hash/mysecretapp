@@ -4,6 +4,7 @@ import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -87,6 +88,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+        // Forzar modo claro
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+
         editRadio = findViewById(R.id.editRadio);
         //para que cada vez que se modifique el valor del radio se lance una busqueda
         editRadio.addTextChangedListener(new TextWatcher() {
@@ -187,10 +191,10 @@ public class MainActivity extends AppCompatActivity {
             if (fotoPerfil != null) {
                 Glide.with(this)
                         .load(fotoPerfil)
-                        .placeholder(R.drawable.ic_menu) // Imagen por defecto mientras carga
+                        .placeholder(R.drawable.ic_persona) // Imagen por defecto mientras carga
                         .into(imageProfile);
             } else {
-                imageProfile.setImageResource(R.drawable.ic_menu); // Imagen por defecto
+                imageProfile.setImageResource(R.drawable.ic_persona); // Imagen por defecto
             }
         }
 
@@ -260,28 +264,24 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(new Intent(this, PerfilActivity.class));
             } else if (id == R.id.nav_favoritos) {
                 Toast.makeText(this, "Favoritos seleccionado", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity.class));
             } else if (id == R.id.nav_settings) {
                 Toast.makeText(this, "Configuración seleccionada", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity.class));
             } else if (id == R.id.nav_help) {
                 Toast.makeText(this, "Ayuda seleccionada", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity.class));
             } else if (id == R.id.nav_logout) {
                 Toast.makeText(this, "Cerrar sesión", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity_v2.class));
+            } else if (id == R.id.nav_message) {
+                Toast.makeText(this, "Cerrar sesión", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, EnDesarrolloActivity.class));
             } else if (id == R.id.nav_create) {
                 Toast.makeText(this, "Crear anuncio", Toast.LENGTH_SHORT).show();
-                //startActivity(new Intent(this, CrearAnuncioActivity.class));
-                /*
-                getSupportFragmentManager()
-                        .beginTransaction()
-                        .replace(R.id.fragment_container, new CrearAnuncioFragment())
-                        .addToBackStack(null)
-                        .commit();
-                */
                 getSupportActionBar().setTitle("Crear anuncio");
                 startActivity(new Intent(this, CrearAnuncioActivity.class));
-
-
             }
-
             drawerLayout.closeDrawers(); // Cierra el menú tras pulsar
             return true;
         });
@@ -337,7 +337,7 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("descripcion", anuncio.getDescripcion());
             intent.putExtra("telefono", anuncio.getTelefono());
             intent.putExtra("localidad", anuncio.getLocalidad());
-            intent.putExtra("imagenUrl", anuncio.getImagenUrl());
+            intent.putExtra("imagenUri", anuncio.getImagenUri());
             startActivity(intent);
         });
         recyclerAnuncios.setAdapter(anuncioAdapter);
@@ -443,8 +443,14 @@ public class MainActivity extends AppCompatActivity {
         ) {
             @Override
             public Map<String, String> getHeaders() {
-                return Map.of("User-Agent", "MiApp/1.0 (alonsoraul610@gmail.com)");
+                String email = "default@example.com";
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                if (user != null && user.getEmail() != null) {
+                    email = user.getEmail();
+                }
+                return Map.of("User-Agent", "MiApp/1.0 (" + email + ")");
             }
+
         };
 
         requestQueue.add(request);
@@ -486,43 +492,6 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
-    /*
-    private void buscarAnunciosPorCoordenadas(double lat, double lon) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        double epsilon = 0.0001;
-
-        db.collectionGroup("anuncios")
-                .whereGreaterThanOrEqualTo("latitud", lat - epsilon)
-                .whereLessThanOrEqualTo("latitud", lat + epsilon)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    listaAnuncios.clear();
-
-                    for (DocumentSnapshot doc : queryDocumentSnapshots) {
-                        Double lonAnuncio = doc.getDouble("longitud");
-                        if (lonAnuncio != null && Math.abs(lonAnuncio - lon) < epsilon) {
-                            String descripcion = doc.getString("descripcion");
-                            String telefono = doc.getString("telefono");
-                            String localidad = doc.getString("localidad");
-                            String imagenUrl = doc.getString("imagenUrl"); // opcional
-
-                            listaAnuncios.add(new Anuncio(descripcion, telefono, localidad, imagenUrl));
-                        }
-                    }
-
-                    anuncioAdapter.notifyDataSetChanged();
-
-                    if (listaAnuncios.isEmpty()) {
-                        Toast.makeText(this, "No hay anuncios en esta localidad", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(this, "Se encontraron " + listaAnuncios.size() + " anuncios", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e -> Log.e("FirestoreError", "Error al buscar anuncios", e));
-    }
-
-     */
     private void buscarAnunciosPorCoordenadas(double lat, double lon, double radioKm) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -543,9 +512,9 @@ public class MainActivity extends AppCompatActivity {
                                 String descripcion = doc.getString("descripcion");
                                 String telefono = doc.getString("telefono");
                                 String localidad = doc.getString("localidad");
-                                String imagenUrl = doc.getString("imagenUrl");
+                                String imagenUri = doc.getString("imagenUri");
 
-                                listaAnuncios.add(new Anuncio(descripcion, telefono, localidad, imagenUrl));
+                                listaAnuncios.add(new Anuncio(descripcion, telefono, localidad, imagenUri));
                             }
                         }
 
@@ -582,9 +551,9 @@ public class MainActivity extends AppCompatActivity {
                                 String descripcion = doc.getString("descripcion");
                                 String telefono = doc.getString("telefono");
                                 String localidad = doc.getString("localidad");
-                                String imagenUrl = doc.getString("imagenUrl");
+                                String imagenUri = doc.getString("imagenUri");
 
-                                listaAnuncios.add(new Anuncio(descripcion, telefono, localidad, imagenUrl));
+                                listaAnuncios.add(new Anuncio(descripcion, telefono, localidad, imagenUri));
                             }
                         }
 
