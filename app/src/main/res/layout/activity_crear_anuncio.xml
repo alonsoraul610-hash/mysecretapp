@@ -26,6 +26,21 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
+        <!-- Texto descriptivo encima del buscador -->
+        <TextView
+            android:id="@+id/textDescripcionBuscador"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Por favor, escriba exactamente su localidad con tildes. Espere un segundo y seleccione la opción que aparece en el desplegable."
+            android:textSize="14sp"
+            android:textColor="@android:color/black"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toBottomOf="@id/topAppBar"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
         <!-- Campo de búsqueda -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/searchInputLayout"
@@ -35,7 +50,7 @@
             android:layout_marginTop="24dp"
             app:startIconDrawable="@android:drawable/ic_menu_search"
             android:hint="Buscar localidad"
-            app:layout_constraintTop_toBottomOf="@id/topAppBar"
+            app:layout_constraintTop_toBottomOf="@id/textDescripcionBuscador"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
@@ -81,7 +96,8 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
             android:layout_marginTop="24dp"
-            android:hint="Número de teléfono "
+            android:maxLength="9"
+            android:hint="Número de teléfono Español"
             app:layout_constraintTop_toBottomOf="@id/descriptionInputLayout"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
